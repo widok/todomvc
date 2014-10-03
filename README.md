@@ -1,6 +1,8 @@
 # TodoMVC
 TodoMVC implementation for Widok.
 
+Currently, it is the shortest available TodoMVC implementation (~120 lines).
+
 ## Installation
 Compile Widok:
 
@@ -19,6 +21,10 @@ sbt fastOptJS
 ```
 
 Now open ``application.html`` in the browser.
+
+## See also
+* [TodoMVC's official page](http://todomvc.com/)
+* [Scala.JS implementation using scalatags](https://github.com/lihaoyi/workbench-example-app/blob/todomvc/src/main/scala/example/ScalaJSExample.scala)
 
 ## License
 TodoMVC is licensed under the terms of the GPLv3.
