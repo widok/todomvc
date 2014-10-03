@@ -40,7 +40,7 @@ case class Main() extends Page {
           autofocus = true,
           autocomplete = false,
           placeholder = "What needs to be done?"
-        )()
+        )
           .bind(addTodo)
           .withId("new-todo")
       ).withId("header"),
@@ -62,7 +62,7 @@ case class Main() extends Page {
           editing.attach(value => li.setCSS("editing", value))
           completed.attach(value => li.setCSS("completed", value))
 
-          val editField = Input.Text()()
+          val editField = Input.Text()
             .bind(value)
             .onEnter(() => editing := false)
             .withCSS("edit")
