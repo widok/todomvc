@@ -1,15 +1,14 @@
 package org.widok.todomvc.pages
 
+import org.scalajs.dom
 import org.widok._
 import org.widok.bindings.HTML._
 
 case class Todo(value: String, completed: Boolean = false, editing: Boolean = false)
-
 case class Filter(value: String, f: Todo => Boolean)
 
 case class Main() extends Page {
-  val addTodo = Channel[String]()
-
+  val todo = Channel[String]()
   val todos = Aggregate[Todo]()
   val cachedTodos = todos.cache
 
@@ -17,20 +16,13 @@ case class Main() extends Page {
   val filterActive = Filter("Active", !_.completed)
   val filterCompleted = Filter("Completed", _.completed)
 
+  val filters = Seq(filterAll, filterActive, filterCompleted)
   val filter = Channel[Filter]()
   val filtered = cachedTodos.filter(filter.map(_.f))
 
-  val filters = Channel[Seq[Filter]]()
-
-  addTodo.attach(t => if (!t.isEmpty) {
-    todos.append(Todo(t))
-    addTodo := ""
-  })
-
-  val completed = todos.filter(_.completed)
+  val completed = todos.filter(cur => cur.completed)
   val uncompleted = todos.filter(!_.completed)
-  val allDone = todos.forall(_.completed)
-  val cachedAllDone = allDone.cache
+  val allCompleted = todos.forall(_.completed)
 
   def contents() = Seq(
     Section(
@@ -40,64 +32,65 @@ case class Main() extends Page {
           autofocus = true,
           autocomplete = false,
           placeholder = "What needs to be done?"
-        )
-          .bind(addTodo)
+        ).bind(todo, (t: String) => if (t != "") {
+          todos.append(Todo(t))
+          todo := ""
+        }, live = false)
           .withId("new-todo")
       ).withId("header"),
 
       Section(
         Input.Checkbox()
-          .bind(allDone)
+          .bind(allCompleted, (state: Boolean) => cachedTodos.update(cur => cur.copy(completed = state)))
           .withCursor(Cursor.Pointer)
           .withId("toggle-all")
-          .onClick(() => cachedTodos.update(cur => cur.copy(completed = cachedAllDone.get.get))),
+          .show(todos.nonEmpty),
 
         Label(forId = "toggle-all")("Mark all as complete"),
 
-        List.Unordered().bind(filtered, (todo: Channel[Todo], li: List.Item) => {
+        List.Unordered().bind(filtered) { todo =>
           val value = todo.lens[String](_.value, (cur, value) => cur.copy(value = value))
           val completed = todo.lens[Boolean](_.completed, (cur, value) => cur.copy(completed = value))
           val editing = todo.lens[Boolean](_.editing, (cur, value) => cur.copy(editing = value))
 
-          editing.attach(value => li.setCSS("editing", value))
-          completed.attach(value => li.setCSS("completed", value))
-
           val editField = Input.Text()
-            .bind(value)
-            .onEnter(() => editing := false)
+            .bind(value, (changed: String) => { value := changed; editing := false }, live = false)
             .withCSS("edit")
 
-          Container.Generic(
+          List.Item(
             Container.Generic(
               Input.Checkbox()
-                .bind(completed, (completed: Boolean, box: Input.Checkbox) => box.setCSS("completed", completed))
-                .withCSS("toggle"),
+                .bind(completed)
+                .withCSS("toggle")
+                .withCSS(completed, "completed"),
 
-              Label()(value).onDoubleClick(() => editing := true),
+              Label()(value)
+                .bindMouse(Event.Mouse.DoubleClick, (e: dom.MouseEvent) => editing := true),
 
               Button()
                 .withCSS("destroy")
                 .withCursor(Cursor.Pointer)
-                .onClick(() => filtered.remove(todo))
+                .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => filtered.remove(todo))
             ).withCSS("view"),
 
-            editing.bind { case true => editField }
-          )
-        }).withId("todo-list")
+            editing.map(if (_) Some(editField) else None)
+          ).withCSS(editing, "editing")
+            .withCSS(completed, "completed")
+        }.withId("todo-list")
       ).withId("main"),
 
       Footer(
         Container.Generic(Text.Bold(uncompleted.size), " item(s) left").withId("todo-count"),
 
-        List.Unordered().bind(filters, (f: Filter, li: List.Item) => {
-          val elem = Anchor()(f.value).onClick(() => filter := f)
-          filter.attach(newFilter => elem.setCSS("selected", newFilter == f))
-          elem
-        }).withId("filters"),
+        List.Unordered(filters.map(f =>
+          List.Item(Anchor()(f.value)
+            .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => filter := f)
+            .withCSS(filter.map(_ == f), "selected"))
+        ): _*).withId("filters"),
 
         Button("Clear completed (", completed.size, ")")
           .show(completed.nonEmpty)
-          .onClick(() => completed.clear())
+          .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => completed.clear())
           .withCursor(Cursor.Pointer)
           .withId("clear-completed")
       ).show(todos.nonEmpty)
@@ -112,7 +105,6 @@ case class Main() extends Page {
   )
 
   def ready(route: InstantiatedRoute) {
-    filters := Seq(filterAll, filterActive, filterCompleted)
     filter := filterAll
   }
 }
