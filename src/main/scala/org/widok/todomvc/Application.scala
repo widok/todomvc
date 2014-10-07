@@ -9,8 +9,7 @@ case class Filter(value: String, f: Todo => Boolean)
 
 object Main extends PageApplication {
   val todo = Channel[String]()
-  val todos = Aggregate[Todo]()
-  val cachedTodos = todos.cache
+  val todos = CachedAggregate[Todo]()
 
   val filterAll = Filter("All", _ => true)
   val filterActive = Filter("Active", !_.completed)
@@ -18,7 +17,7 @@ object Main extends PageApplication {
 
   val filters = Seq(filterAll, filterActive, filterCompleted)
   val filter = Channel[Filter]()
-  val filtered = cachedTodos.filter(filter.map(_.f))
+  val filtered = todos.filterCh(filter.map(_.f))
 
   val completed = todos.filter(_.completed)
   val uncompleted = todos.filter(!_.completed)
@@ -41,7 +40,7 @@ object Main extends PageApplication {
 
       Section(
         Input.Checkbox()
-          .bind(allCompleted, (state: Boolean) => cachedTodos.update(cur => cur.copy(completed = state)))
+          .bind(allCompleted, (state: Boolean) => todos.update(cur => cur.copy(completed = state)))
           .withCursor(Cursor.Pointer)
           .withId("toggle-all")
           .show(todos.nonEmpty),
@@ -80,7 +79,8 @@ object Main extends PageApplication {
       ).withId("main"),
 
       Footer(
-        Container.Generic(Text.Bold(uncompleted.size), " item(s) left").withId("todo-count"),
+        Container.Generic(Text.Bold(uncompleted.size), " item(s) left")
+          .withId("todo-count"),
 
         List.Unordered(filters.map(f =>
           List.Item(Anchor()(f.value)

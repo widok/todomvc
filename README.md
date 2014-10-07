@@ -1,7 +1,7 @@
 # TodoMVC
 TodoMVC implementation for Widok.
 
-Currently, it is the shortest available TodoMVC implementation (~120 lines).
+Currently, it is the shortest available TodoMVC implementation (~110 lines).
 
 ## Installation
 Compile Widok:
