@@ -75,6 +75,7 @@ object Main extends PageApplication {
             editing.map(if (_) Some(editField) else None)
           ).withCSS(editing, "editing")
             .withCSS(completed, "completed")
+            .asInstanceOf[List.Item]
         }.withId("todo-list")
       ).withId("main"),
 
