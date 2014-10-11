@@ -48,9 +48,9 @@ object Main extends PageApplication {
         Label(forId = "toggle-all")("Mark all as complete"),
 
         List.Unordered().bind(filtered) { todo =>
-          val value = todo.lens[String](_.value, (cur, value) => cur.copy(value = value))
-          val completed = todo.lens[Boolean](_.completed, (cur, value) => cur.copy(completed = value))
-          val editing = todo.lens[Boolean](_.editing, (cur, value) => cur.copy(editing = value))
+          val value = todo.value[String](_ >> 'value)
+          val completed = todo.value[Boolean](_ >> 'completed)
+          val editing = todo.value[Boolean](_ >> 'editing)
 
           val editField = Input.Text()
             .bind(value, (changed: String) => { value := changed; editing := false }, live = false)
