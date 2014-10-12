@@ -10,13 +10,17 @@ case class Filter(value: String, f: Todo => Boolean)
 object Main extends PageApplication {
   val todo = Channel[String]()
   val todos = CachedAggregate[Todo]()
+  todo.attach(t => if (t != "") {
+    todos.append(Todo(t))
+    todo := ""
+  })
 
   val filterAll = Filter("All", _ => true)
   val filterActive = Filter("Active", !_.completed)
   val filterCompleted = Filter("Completed", _.completed)
 
   val filters = Seq(filterAll, filterActive, filterCompleted)
-  val filter = Channel[Filter]()
+  val filter = Channel.unit(filterAll)
   val filtered = todos.filterCh(filter.map(_.f))
 
   val completed = todos.filter(_.completed)
@@ -31,19 +35,17 @@ object Main extends PageApplication {
           autofocus = true,
           autocomplete = false,
           placeholder = "What needs to be done?"
-        ).bind(todo, (t: String) => if (t != "") {
-          todos.append(Todo(t))
-          todo := ""
-        }, live = false)
-          .withId("new-todo")
+        ).bind(todo)
+         .withId("new-todo")
       ).withId("header"),
 
       Section(
         Input.Checkbox()
-          .bind(allCompleted, (state: Boolean) => todos.update(cur => cur.copy(completed = state)))
-          .withCursor(Cursor.Pointer)
+          .bind(allCompleted)
+          .bind((state: Boolean) => todos.update(cur => cur.copy(completed = state)))
+          .show(todos.nonEmpty)
           .withId("toggle-all")
-          .show(todos.nonEmpty),
+          .withCursor(Cursor.Pointer),
 
         Label(forId = "toggle-all")("Mark all as complete"),
 
@@ -53,7 +55,8 @@ object Main extends PageApplication {
           val editing = todo.value[Boolean](_ >> 'editing)
 
           val editField = Input.Text()
-            .bind(value, (changed: String) => { value := changed; editing := false }, live = false)
+            .bind(value)
+            .bind((_: String) => editing := false)
             .withCSS("edit")
 
           List.Item(
@@ -67,15 +70,15 @@ object Main extends PageApplication {
                 .bindMouse(Event.Mouse.DoubleClick, (e: dom.MouseEvent) => editing := true),
 
               Button()
+                .bind((_: Unit) => filtered.remove(todo))
                 .withCSS("destroy")
                 .withCursor(Cursor.Pointer)
-                .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => filtered.remove(todo))
             ).withCSS("view"),
 
             editing.map(if (_) Some(editField) else None)
           ).withCSS(editing, "editing")
-            .withCSS(completed, "completed")
-            .asInstanceOf[List.Item]
+           .withCSS(completed, "completed")
+           .asInstanceOf[List.Item] // TODO Workaround
         }.withId("todo-list")
       ).withId("main"),
 
@@ -84,14 +87,15 @@ object Main extends PageApplication {
           .withId("todo-count"),
 
         List.Unordered(filters.map(f =>
-          List.Item(Anchor()(f.value)
-            .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => filter := f)
-            .withCSS(filter.map(_ == f), "selected"))
+          List.Item(
+            Anchor()(f.value)
+              .bind((_: Unit) => filter := f)
+              .withCSS(filter.map(_ == f), "selected"))
         ): _*).withId("filters"),
 
         Button("Clear completed (", completed.size, ")")
+          .bind((_: Unit) => completed.clear())
           .show(completed.nonEmpty)
-          .bindMouse(Event.Mouse.Click, (e: dom.MouseEvent) => completed.clear())
           .withCursor(Cursor.Pointer)
           .withId("clear-completed")
       ).show(todos.nonEmpty)
@@ -105,7 +109,5 @@ object Main extends PageApplication {
     ).withId("info")
   )
 
-  def ready() {
-    filter := filterAll
-  }
+  def ready() {}
 }
