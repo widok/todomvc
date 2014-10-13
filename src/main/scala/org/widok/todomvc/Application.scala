@@ -31,23 +31,23 @@ object Main extends PageApplication {
     Section(
       Header(
         Heading.Level1("todos"),
-        Input.Text(
-          autofocus = true,
-          autocomplete = false,
-          placeholder = "What needs to be done?"
-        ).bind(todo)
-         .withId("new-todo")
-      ).withId("header"),
+        Input.Text()
+          .autofocus(true)
+          .placeholder("What needs to be done?")
+          .bind(todo)
+          .id("new-todo")
+      ).id("header"),
 
       Section(
         Input.Checkbox()
           .bind(allCompleted)
           .bind((state: Boolean) => todos.update(cur => cur.copy(completed = state)))
           .show(todos.nonEmpty)
-          .withId("toggle-all")
-          .withCursor(Cursor.Pointer),
+          .id("toggle-all")
+          .cursor(Cursor.Pointer),
 
-        Label(forId = "toggle-all")("Mark all as complete"),
+        Label("Mark all as complete")
+          .forId("toggle-all"),
 
         List.Unordered().bind(filtered) { todo =>
           val value = todo.value[String](_ >> 'value)
@@ -57,56 +57,55 @@ object Main extends PageApplication {
           val editField = Input.Text()
             .bind(value)
             .bind((_: String) => editing := false)
-            .withCSS("edit")
+            .css("edit")
 
           List.Item(
             Container.Generic(
               Input.Checkbox()
                 .bind(completed)
-                .withCSS("toggle")
-                .withCSS(completed, "completed"),
+                .css("toggle")
+                .cssCh(completed, "completed"),
 
-              Label()(value)
+              Label(value)
                 .bindMouse(Event.Mouse.DoubleClick, (e: dom.MouseEvent) => editing := true),
 
               Button()
                 .bind((_: Unit) => filtered.remove(todo))
-                .withCSS("destroy")
-                .withCursor(Cursor.Pointer)
-            ).withCSS("view"),
+                .css("destroy")
+                .cursor(Cursor.Pointer)
+            ).css("view"),
 
             editing.map(if (_) Some(editField) else None)
-          ).withCSS(editing, "editing")
-           .withCSS(completed, "completed")
-           .asInstanceOf[List.Item] // TODO Workaround
-        }.withId("todo-list")
-      ).withId("main"),
+          ).cssCh(editing, "editing")
+           .cssCh(completed, "completed")
+        }.id("todo-list")
+      ).id("main"),
 
       Footer(
         Container.Generic(Text.Bold(uncompleted.size), " item(s) left")
-          .withId("todo-count"),
+          .id("todo-count"),
 
         List.Unordered(filters.map(f =>
           List.Item(
-            Anchor()(f.value)
+            Anchor(f.value)
               .bind((_: Unit) => filter := f)
-              .withCSS(filter.map(_ == f), "selected"))
-        ): _*).withId("filters"),
+              .cssCh(filter.map(_ == f), "selected"))
+        ): _*).id("filters"),
 
         Button("Clear completed (", completed.size, ")")
           .bind((_: Unit) => completed.clear())
           .show(completed.nonEmpty)
-          .withCursor(Cursor.Pointer)
-          .withId("clear-completed")
+          .cursor(Cursor.Pointer)
+          .id("clear-completed")
       ).show(todos.nonEmpty)
-        .withId("footer")
-    ).withId("todoapp"),
+        .id("footer")
+    ).id("todoapp"),
 
     Footer(
       Paragraph("Double-click to edit a todo"),
-      Paragraph("Written by ", Anchor("http://github.com/tindzk/")("Tim Nieradzik")),
-      Paragraph("Part of ", Anchor("http://todomvc.com/")("TodoMVC"))
-    ).withId("info")
+      Paragraph("Written by ", Anchor("Tim Nieradzik").url("http://github.com/tindzk/")),
+      Paragraph("Part of ", Anchor("TodoMVC").url("http://todomvc.com/"))
+    ).id("info")
   )
 
   def ready() {}
