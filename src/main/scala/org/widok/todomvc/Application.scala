@@ -50,9 +50,9 @@ object Main extends PageApplication {
           .forId("toggle-all"),
 
         List.Unordered().bind(filtered) { todo =>
-          val value = todo.value[String](_ >> 'value)
-          val completed = todo.value[Boolean](_ >> 'completed)
-          val editing = todo.value[Boolean](_ >> 'editing)
+          val value = todo.cache.value[String](_ >> 'value)
+          val completed = todo.cache.value[Boolean](_ >> 'completed)
+          val editing = todo.cache.value[Boolean](_ >> 'editing)
 
           val editField = Input.Text()
             .bind(value)
