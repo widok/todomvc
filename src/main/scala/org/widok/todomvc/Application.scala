@@ -10,10 +10,10 @@ case class Filter(value: String, f: Todo => Boolean)
 object Main extends PageApplication {
   val todo = Channel[String]()
   val todos = CachedAggregate[Todo]()
-  todo.attach(t => if (t != "") {
-    todos.append(Todo(t))
+  todo.filter(_.nonEmpty).attach { value =>
+    todos.append(Todo(value))
     todo := ""
-  })
+  }
 
   val filterAll = Filter("All", _ => true)
   val filterActive = Filter("Active", !_.completed)
