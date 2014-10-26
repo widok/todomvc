@@ -1,23 +1,13 @@
 # TodoMVC
-TodoMVC implementation for Widok.
+TodoMVC implementation for the Widok web framework.
 
 Currently, it is the shortest available TodoMVC implementation (~110 lines).
 
 ## Installation
-Compile Widok:
-
-```
-git clone git@github.com:widok/widok.git
-cd widok
-sbt publish-local
-cd ..
-```
-
-Compile TodoMVC:
-```
-git clone git@github.com:widok/todomvc.git
-cd todomvc
-sbt fastOptJS
+```bash
+$ git clone git@github.com:widok/todomvc.git
+$ cd todomvc
+$ sbt fastOptJS
 ```
 
 Now open ``application.html`` in the browser.
@@ -30,4 +20,4 @@ Now open ``application.html`` in the browser.
 TodoMVC is licensed under the terms of the GPLv3.
 
 ## Authors
-Tim Nieradzik <tim@kognit.io>
+- Tim Nieradzik
