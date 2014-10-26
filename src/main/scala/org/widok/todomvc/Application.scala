@@ -89,6 +89,7 @@ object Main extends PageApplication {
           List.Item(
             Anchor(f.value)
               .bind((_: Unit) => filter := f)
+              .cursor(Cursor.Pointer)
               .cssCh(filter.map(_ == f), "selected"))
         ): _*).id("filters"),
 
