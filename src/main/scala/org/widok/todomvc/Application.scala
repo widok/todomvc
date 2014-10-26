@@ -41,7 +41,7 @@ object Main extends PageApplication {
       Section(
         Input.Checkbox()
           .bind(allCompleted)
-          .bind((state: Boolean) => todos.update(cur => cur.copy(completed = state)))
+          .bind((state: Boolean) => todos.update(_.copy(completed = state)))
           .show(todos.nonEmpty)
           .id("toggle-all")
           .cursor(Cursor.Pointer),
@@ -71,8 +71,7 @@ object Main extends PageApplication {
             ).css("view"),
 
             Input.Text()
-              .bind(value)
-              .bind((_: String) => editing := false)
+              .bind(value + ((_: String) => editing := false))
               .css("edit")
               .show(editing)
           ).cssCh(editing, "editing")
