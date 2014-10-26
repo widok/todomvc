@@ -10,7 +10,7 @@ case class Filter(value: String, f: Todo => Boolean)
 object Main extends PageApplication {
   val todo = Channel[String]()
   val todos = CachedAggregate[Todo]()
-  todo.filter(_.nonEmpty).attach { value =>
+  todo.map(_.trim).filter(_.nonEmpty).attach { value =>
     todos.append(Todo(value))
     todo := ""
   }
@@ -99,7 +99,7 @@ object Main extends PageApplication {
           .cursor(Cursor.Pointer)
           .id("clear-completed")
       ).show(todos.nonEmpty)
-        .id("footer")
+       .id("footer")
     ).id("todoapp"),
 
     Footer(
