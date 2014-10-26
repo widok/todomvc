@@ -54,11 +54,6 @@ object Main extends PageApplication {
           val completed = todo.cache.value[Boolean](_ >> 'completed)
           val editing = todo.cache.value[Boolean](_ >> 'editing)
 
-          val editField = Input.Text()
-            .bind(value)
-            .bind((_: String) => editing := false)
-            .css("edit")
-
           List.Item(
             Container.Generic(
               Input.Checkbox()
@@ -75,7 +70,11 @@ object Main extends PageApplication {
                 .cursor(Cursor.Pointer)
             ).css("view"),
 
-            editing.map(if (_) Some(editField) else None)
+            Input.Text()
+              .bind(value)
+              .bind((_: String) => editing := false)
+              .css("edit")
+              .show(editing)
           ).cssCh(editing, "editing")
            .cssCh(completed, "completed")
         }.id("todo-list")
