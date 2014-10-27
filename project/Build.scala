@@ -4,7 +4,7 @@ import scala.scalajs.sbtplugin.ScalaJSPlugin._
 
 object Build extends sbt.Build {
   val buildOrganisation = "org.widok"
-  val buildVersion = "0.1.1"
+  val buildVersion = "0.1.3"
   val buildScalaVersion = "2.11.2"
   val buildScalaOptions = Seq(
     "-unchecked", "-deprecation",
@@ -14,9 +14,9 @@ object Build extends sbt.Build {
   lazy val main = Project(id = "todomvc", base = file("."))
     .settings(scalaJSSettings: _*)
     .settings(
-      resolvers += "Sonatype Nexus Staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2",
+      resolvers += "Sonatype Nexus Releases" at "https://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Seq(
-        "org.widok" %%% "widok" % "0.1.1"
+        "io.github.widok" %%% "widok" % "0.1.3"
       ),
       organization := buildOrganisation,
       version := buildVersion,
