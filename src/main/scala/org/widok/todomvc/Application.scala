@@ -23,9 +23,8 @@ object Main extends PageApplication {
   val filter = Channel.unit(filterAll)
   val filtered = todos.filterCh(filter.map(_.f))
 
-  val completed = todos.filter(_.completed)
-  val uncompleted = todos.filter(!_.completed)
-  val allCompleted = todos.forall(_.completed)
+  val (completed, uncompleted) = todos.partition(_.completed)
+  val allCompleted = uncompleted.isEmpty
 
   def contents() = Seq(
     Section(
