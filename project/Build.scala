@@ -15,6 +15,7 @@ object Build extends sbt.Build {
     .settings(scalaJSSettings: _*)
     .settings(
       resolvers += "Sonatype Nexus Releases" at "https://oss.sonatype.org/content/repositories/releases",
+      resolvers += "bintray-alexander_myltsev" at "http://dl.bintray.com/alexander-myltsev/maven/",
       libraryDependencies ++= Seq(
         "io.github.widok" %%% "widok" % "0.1.3"
       ),
