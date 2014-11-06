@@ -9,9 +9,9 @@ case class Filter(value: String, f: Todo => Boolean)
 
 object Main extends PageApplication {
   val todo = Channel[String]()
-  val todos = CachedAggregate[Todo]()
+  val todos = VarBuf[Todo]()
   todo.map(_.trim).filter(_.nonEmpty).attach { value =>
-    todos.append(Todo(value))
+    todos += Todo(value)
     todo := ""
   }
 
@@ -20,7 +20,7 @@ object Main extends PageApplication {
   val filterCompleted = Filter("Completed", _.completed)
 
   val filters = Seq(filterAll, filterActive, filterCompleted)
-  val filter = Channel.unit(filterAll)
+  val filter = Var(filterAll)
   val filtered = todos.filterCh(filter.map(_.f))
 
   val (completed, uncompleted) = todos.partition(_.completed)
@@ -39,8 +39,7 @@ object Main extends PageApplication {
 
       Section(
         Input.Checkbox()
-          .bind(allCompleted)
-          .bind((state: Boolean) => todos.update(_.copy(completed = state)))
+          .bind(allCompleted.writeTo(todos.setter[Boolean](_ >> 'completed)))
           .show(todos.nonEmpty)
           .id("toggle-all")
           .cursor(Cursor.Pointer),
@@ -49,9 +48,9 @@ object Main extends PageApplication {
           .forId("toggle-all"),
 
         List.Unordered().bind(filtered) { todo =>
-          val value = todo.cache.value[String](_ >> 'value)
-          val completed = todo.cache.value[Boolean](_ >> 'completed)
-          val editing = todo.cache.value[Boolean](_ >> 'editing)
+          val value = todo.value[String](_ >> 'value)
+          val completed = todo.value[Boolean](_ >> 'completed)
+          val editing = todo.value[Boolean](_ >> 'editing)
 
           List.Item(
             Container.Generic(
@@ -64,7 +63,7 @@ object Main extends PageApplication {
                 .bindMouse(Event.Mouse.DoubleClick, (e: dom.MouseEvent) => editing := true),
 
               Button()
-                .bind((_: Unit) => filtered.remove(todo))
+                .bind((_: Unit) => todos.remove(todo))
                 .css("destroy")
                 .cursor(Cursor.Pointer)
             ).css("view"),
@@ -82,16 +81,16 @@ object Main extends PageApplication {
         Container.Generic(Text.Bold(uncompleted.size), " item(s) left")
           .id("todo-count"),
 
-        List.Unordered(filters.map(f =>
+        List.Unordered().bind(Var(filters)) { f =>
           List.Item(
             Anchor(f.value)
               .bind((_: Unit) => filter := f)
               .cursor(Cursor.Pointer)
               .cssCh(filter.map(_ == f), "selected"))
-        ): _*).id("filters"),
+        }.id("filters"),
 
         Button("Clear completed (", completed.size, ")")
-          .bind((_: Unit) => completed.clear())
+          .bind((_: Unit) => todos.removeAll(completed))
           .show(completed.nonEmpty)
           .cursor(Cursor.Pointer)
           .id("clear-completed")
