@@ -86,7 +86,7 @@ object Main extends PageApplication {
             Anchor(f.value)
               .bind((_: Unit) => filter := f)
               .cursor(Cursor.Pointer)
-              .cssCh(filter.map(_ == f), "selected"))
+              .cssCh(filter.equal(f), "selected"))
         }.id("filters"),
 
         Button("Clear completed (", completed.size, ")")
