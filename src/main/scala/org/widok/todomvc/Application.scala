@@ -27,42 +27,42 @@ object Main extends PageApplication {
   def view() = Inline(
     Section(
       Header(
-        Heading.Level1("todos"),
-        Input.Text()
+        Heading.Level1("todos")
+        , Input.Text()
           .bind(todo)
           .autofocus(true)
           .placeholder("What needs to be done?")
           .id("new-todo")
-      ).id("header"),
+      ).id("header")
 
-      Section(
+      , Section(
         Input.Checkbox() /* All completed? */
           .bind(Channel(uncompleted.isEmpty,
             (checked: Boolean) => todos.foreach(_.completed := checked)))
           .show(todos.nonEmpty)
           .id("toggle-all")
-          .cursor(Cursor.Pointer),
+          .cursor(Cursor.Pointer)
 
-        Label("Mark all as complete")
-          .forId("toggle-all"),
+        , Label("Mark all as complete")
+          .forId("toggle-all")
 
-        List.Unordered().bind(todos) { case tRef @ Ref(t) =>
+        , List.Unordered().bind(todos) { case tRef @ Ref(t) =>
           List.Item(
             Container.Generic(
               Input.Checkbox()
                 .bind(t.completed)
-                .css("toggle"),
+                .css("toggle")
 
-              Label(t.value)
-                .onDoubleClick(_ => t.editing := true),
+              , Label(t.value)
+                .onDoubleClick(_ => t.editing := true)
 
-              Button()
+              , Button()
                 .onClick(_ => todos.remove(tRef))
                 .css("destroy")
                 .cursor(Cursor.Pointer)
-            ).css("view"),
+            ).css("view")
 
-            Input.Text()
+            , Input.Text()
               .bind(t.value)
               .attach(_ => t.editing := false)
               .css("edit")
@@ -72,34 +72,34 @@ object Main extends PageApplication {
            .cssCh(t.completed, "completed")
            .show(filter.flatMap(_.f(t)))
         }.id("todo-list")
-      ).id("main"),
+      ).id("main")
 
-      Footer(
+      , Footer(
         Container.Generic(Text.Bold(uncompleted.size), " item(s) left")
-          .id("todo-count"),
+          .id("todo-count")
 
-        List.Unordered().bind(filters) { case Ref(f) =>
+        , List.Unordered().bind(filters) { case Ref(f) =>
           List.Item(
             Anchor(f.value)
               .onClick(_ => filter := f)
               .cursor(Cursor.Pointer)
               .cssCh(filter.equal(f), "selected")
           )
-        }.id("filters"),
+        }.id("filters")
 
-        Button("Clear completed (", completed.size, ")")
+        , Button("Clear completed (", completed.size, ")")
           .onClick(_ => todos.removeAll(completed))
           .show(completed.nonEmpty)
           .cursor(Cursor.Pointer)
           .id("clear-completed")
       ).show(todos.nonEmpty)
        .id("footer")
-    ).id("todoapp"),
+    ).id("todoapp")
 
-    Footer(
-      Paragraph("Double-click to edit a todo"),
-      Paragraph("Written by ", Anchor("Tim Nieradzik").url("http://github.com/tindzk/")),
-      Paragraph("Part of ", Anchor("TodoMVC").url("http://todomvc.com/"))
+    , Footer(
+      Paragraph("Double-click to edit a todo")
+      , Paragraph("Written by ", Anchor("Tim Nieradzik").url("http://github.com/tindzk/"))
+      , Paragraph("Part of ", Anchor("TodoMVC").url("http://todomvc.com/"))
     ).id("info")
   )
 
