@@ -1,18 +1,19 @@
-import sbt.Keys._
 import sbt._
-import scala.scalajs.sbtplugin.ScalaJSPlugin._
+import sbt.Keys._
+import org.scalajs.sbtplugin._
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 
 object Build extends sbt.Build {
   val buildOrganisation = "org.widok"
   val buildVersion = "0.1.4"
-  val buildScalaVersion = "2.11.2"
+  val buildScalaVersion = "2.11.4"
   val buildScalaOptions = Seq(
     "-unchecked", "-deprecation",
     "-encoding", "utf8"
   )
 
   lazy val main = Project(id = "todomvc", base = file("."))
-    .settings(scalaJSSettings: _*)
+    .enablePlugins(ScalaJSPlugin)
     .settings(
       resolvers += "Sonatype Nexus Releases" at "https://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Seq(
@@ -22,6 +23,6 @@ object Build extends sbt.Build {
       version := buildVersion,
       scalaVersion := buildScalaVersion,
       scalacOptions := buildScalaOptions,
-      ScalaJSKeys.persistLauncher := true
+      persistLauncher := true
     )
 }

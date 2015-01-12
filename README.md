@@ -1,7 +1,7 @@
 # TodoMVC
 TodoMVC implementation for the Widok web framework.
 
-Currently, it is the shortest available TodoMVC implementation (89 code lines).
+Currently, it is the shortest available TodoMVC implementation (88 code lines).
 
 ## Installation
 ```bash
