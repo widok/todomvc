@@ -22,7 +22,7 @@ object Main extends PageApplication {
   val filters = Buffer(filterAll, filterActive, filterCompleted)
   val filter = Var(filterAll)
 
-  val (completed, uncompleted) = todos.view(_.completed).partition(_.completed.get)
+  val (completed, uncompleted) = todos.watch(_.completed).partition(_.completed.get)
 
   def view() = Inline(
     section(
@@ -46,7 +46,7 @@ object Main extends PageApplication {
         , label("Mark all as complete")
           .forId("toggle-all")
 
-        , ul().bind(todos) { case tRef @ Ref(t) =>
+        , ul().bind(todos) { t =>
           li(
             div(
               checkbox()
@@ -57,7 +57,7 @@ object Main extends PageApplication {
                 .onDoubleClick(_ => t.editing := true)
 
               , button()
-                .onClick(_ => todos.remove(tRef))
+                .onClick(_ => todos.remove(t))
                 .css("destroy")
                 .cursor(cursor.Pointer)
             ).css("view")
@@ -78,7 +78,7 @@ object Main extends PageApplication {
         div(b(uncompleted.size), " item(s) left")
           .id("todo-count")
 
-        , ul().bind(filters) { case Ref(f) =>
+        , ul().bind(filters) { f =>
           li(
             a(f.value)
               .onClick(_ => filter := f)
@@ -88,7 +88,7 @@ object Main extends PageApplication {
         }.id("filters")
 
         , button("Clear completed (", completed.size, ")")
-          .onClick(_ => todos.removeAll(completed))
+          .onClick(_ => todos.removeAll(completed.buffer))
           .show(completed.nonEmpty)
           .cursor(cursor.Pointer)
           .id("clear-completed")
