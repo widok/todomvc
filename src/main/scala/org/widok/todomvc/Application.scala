@@ -3,26 +3,31 @@ package org.widok.todomvc
 import org.widok._
 import org.widok.html._
 
-case class Todo(value: Var[String], completed: Var[Boolean] = Var(false), editing: Var[Boolean] = Var(false))
-case class Filter(value: String, f: Todo => ReadChannel[Boolean])
+object Application extends PageApplication {
+  type Todo = Ref[Var[String]]
+  case class Filter(value: String, f: Todo => ReadChannel[Boolean])
 
-object Main extends PageApplication {
   val todo = Channel[String]()
   val todos = Buffer[Todo]()
 
-  todo.filterCycles.map(_.trim).filter(_.nonEmpty).attach { value =>
-    todos += Todo(Var(value))
-    todo := "" /* This must be used in conjunction with ``filterCycles``. */
-  }
+  val completed = BufSet[Todo]()
+  val uncompleted = todos - completed
+
+  val editing = Var(Option.empty[Todo])
 
   val filterAll = Filter("All", _ => Var(true))
-  val filterActive = Filter("Active", _.completed.map(!_))
-  val filterCompleted = Filter("Completed", _.completed)
+  val filterActive = Filter("Active", uncompleted.contains)
+  val filterCompleted = Filter("Completed", completed.contains)
 
   val filters = Buffer(filterAll, filterActive, filterCompleted)
   val filter = Var(filterAll)
 
-  val (completed, uncompleted) = todos.watch(_.completed).partition(_.completed.get)
+  todo.filterCycles.map(_.trim).filter(_.nonEmpty).attach { value =>
+    todos += Ref(Var(value))
+    todo := "" /* Makes the `filterCycles` call necessary. */
+  }
+
+  todos.removals.attach(completed -= _)
 
   def view() = Inline(
     section(
@@ -35,10 +40,9 @@ object Main extends PageApplication {
           .id("new-todo")
       ).id("header")
 
-      , section(
+    , section(
         checkbox() /* All completed? */
-          .bind(Channel(uncompleted.isEmpty,
-            (checked: Boolean) => todos.foreach(_.completed := checked)))
+          .bind(Channel(uncompleted.isEmpty, (c: Boolean) => completed.toggle(c, todos: _*)))
           .show(todos.nonEmpty)
           .id("toggle-all")
           .cursor(cursor.Pointer)
@@ -50,35 +54,35 @@ object Main extends PageApplication {
           li(
             div(
               checkbox()
-                .bind(t.completed)
+                .bind(Channel(completed.contains(t), (c: Boolean) => completed.toggle(c, t)))
                 .css("toggle")
 
-              , label(t.value)
-                .onDoubleClick(_ => t.editing := true)
+            , label(t.get)
+                .onDoubleClick(_ => editing := Some(t))
 
-              , button()
+            , button()
                 .onClick(_ => todos.remove(t))
                 .css("destroy")
                 .cursor(cursor.Pointer)
             ).css("view")
 
-            , text()
-              .bind(t.value)
-              .attach(_ => t.editing := false)
+          , text()
+              .bind(t.get)
+              .attach(_ => editing := None)
               .css("edit")
-              .show(t.editing)
+              .show(editing.equal(Some(t)))
           ).css("todo")
-           .cssCh(t.editing, "editing")
-           .cssCh(t.completed, "completed")
+           .cssCh(editing.equal(Some(t)), "editing")
+           .cssCh(completed.contains(t), "completed")
            .show(filter.flatMap(_.f(t)))
         }.id("todo-list")
       ).id("main")
 
-      , footer(
+    , footer(
         div(b(uncompleted.size), " item(s) left")
           .id("todo-count")
 
-        , ul().bind(filters) { f =>
+      , ul().bind(filters) { f =>
           li(
             a(f.value)
               .onClick(_ => filter := f)
@@ -87,8 +91,8 @@ object Main extends PageApplication {
           )
         }.id("filters")
 
-        , button("Clear completed (", completed.size, ")")
-          .onClick(_ => todos.removeAll(completed.buffer))
+      , button("Clear completed (", completed.size, ")")
+          .onClick(_ => todos.removeAll(completed))
           .show(completed.nonEmpty)
           .cursor(cursor.Pointer)
           .id("clear-completed")
@@ -98,8 +102,7 @@ object Main extends PageApplication {
 
     , footer(
       p("Double-click to edit a todo")
-      , p("Written by ", a("Tim Nieradzik").url("http://github.com/tindzk/"))
-      , p("Part of ", a("TodoMVC").url("http://todomvc.com/"))
+    , p("Written by ", a("Tim Nieradzik").url("http://github.com/tindzk/"))
     ).id("info")
   )
 
