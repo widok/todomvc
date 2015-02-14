@@ -2,6 +2,7 @@ import sbt._
 import sbt.Keys._
 import org.scalajs.sbtplugin._
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+import org.scalajs.core.tools.sem._
 
 object Build extends sbt.Build {
   val buildOrganisation = "org.widok"
@@ -22,6 +23,10 @@ object Build extends sbt.Build {
       version := buildVersion,
       scalaVersion := buildScalaVersion,
       scalacOptions := buildScalaOptions,
-      persistLauncher := true
+      persistLauncher := true,
+      scalaJSSemantics ~= (_
+        .withRuntimeClassName(_ => "")
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)
+      )
     )
 }
