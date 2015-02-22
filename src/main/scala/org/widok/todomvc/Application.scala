@@ -4,7 +4,7 @@ import org.widok._
 import org.widok.html._
 
 object Application extends PageApplication {
-  type Todo = Ref[Var[String]]
+  type Todo = Var[String]
   case class Filter(value: String, f: Todo => ReadChannel[Boolean])
 
   val todo = Channel[String]()
@@ -23,7 +23,7 @@ object Application extends PageApplication {
   val filter = Var(filterAll)
 
   todo.filterCycles.map(_.trim).filter(_.nonEmpty).attach { value =>
-    todos += Ref(Var(value))
+    todos += Var(value)
     todo := "" /* Makes the `filterCycles` call necessary. */
   }
 
@@ -34,7 +34,7 @@ object Application extends PageApplication {
       header(
         h1("todos")
         , text()
-          .bind(todo)
+          .bindEnter(todo)
           .autofocus(true)
           .placeholder("What needs to be done?")
           .id("new-todo")
@@ -50,14 +50,14 @@ object Application extends PageApplication {
         , label("Mark all as complete")
           .forId("toggle-all")
 
-        , ul().bind(todos) { t =>
+        , ul(todos.map { t =>
           li(
             div(
               checkbox()
-                .bind(Channel(completed.contains(t), (c: Boolean) => completed.toggle(c, t)))
+                .bind(Channel(completed.contains(t), (c: Boolean) => if (completed.contains$(t) != c) completed.toggle(c, t)))
                 .css("toggle")
 
-            , label(t.get)
+            , label(t)
                 .onDoubleClick(_ => editing := Some(t))
 
             , button()
@@ -67,29 +67,29 @@ object Application extends PageApplication {
             ).css("view")
 
           , text()
-              .bind(t.get)
-              .attach(_ => editing := None)
+              .bindEnter(t)
+              .attachEnter(_ => editing := None)
               .css("edit")
-              .show(editing.equal(Some(t)))
+              .show(editing.is(Some(t)))
           ).css("todo")
-           .cssCh(editing.equal(Some(t)), "editing")
-           .cssCh(completed.contains(t), "completed")
+           .cssState(editing.is(Some(t)), "editing")
+           .cssState(completed.contains(t), "completed")
            .show(filter.flatMap(_.f(t)))
-        }.id("todo-list")
+        }).id("todo-list")
       ).id("main")
 
     , footer(
         div(b(uncompleted.size), " item(s) left")
           .id("todo-count")
 
-      , ul().bind(filters) { f =>
+      , ul(filters.map { f =>
           li(
             a(f.value)
               .onClick(_ => filter := f)
               .cursor(cursor.Pointer)
-              .cssCh(filter.equal(f), "selected")
+              .cssState(filter.is(f), "selected")
           )
-        }.id("filters")
+        }).id("filters")
 
       , button("Clear completed (", completed.size, ")")
           .onClick(_ => todos.removeAll(completed))
