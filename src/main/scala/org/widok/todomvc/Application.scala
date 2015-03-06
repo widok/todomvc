@@ -7,20 +7,19 @@ object Application extends PageApplication {
   type Todo = Var[String]
   case class Filter(value: String, f: Todo => ReadChannel[Boolean])
 
-  val todo = Channel[String]()
+  val todo  = Channel[String]()
   val todos = Buffer[Todo]()
 
   val completed = BufSet[Todo]()
-  val uncompleted = todos - completed
+  val active    = todos - completed
 
-  val editing = Var(Option.empty[Todo])
-
-  val filterAll = Filter("All", _ => Var(true))
-  val filterActive = Filter("Active", uncompleted.contains)
+  val filterAll       = Filter("All"      , _ => Var(true)    )
+  val filterActive    = Filter("Active"   , active.contains   )
   val filterCompleted = Filter("Completed", completed.contains)
 
+  val filter  = Var(filterAll)
   val filters = Buffer(filterAll, filterActive, filterCompleted)
-  val filter = Var(filterAll)
+  val editing = Var(Option.empty[Todo])
 
   todo.filterCycles.map(_.trim).filter(_.nonEmpty).attach { value =>
     todos += Var(value)
@@ -33,7 +32,7 @@ object Application extends PageApplication {
     section(
       header(
         h1("todos")
-        , text()
+      , text()
           .bindEnter(todo)
           .autofocus(true)
           .placeholder("What needs to be done?")
@@ -42,15 +41,15 @@ object Application extends PageApplication {
 
     , section(
         checkbox() /* All completed? */
-          .bind(Channel(uncompleted.isEmpty, (c: Boolean) => completed.toggle(c, todos: _*)))
+          .bind(Channel(active.isEmpty, (c: Boolean) => completed.toggle(c, todos: _*)))
           .show(todos.nonEmpty)
           .id("toggle-all")
           .cursor(cursor.Pointer)
 
-        , label("Mark all as complete")
+      , label("Mark all as complete")
           .forId("toggle-all")
 
-        , ul(todos.map { t =>
+      , ul(todos.map { t =>
           li(
             div(
               checkbox()
@@ -66,11 +65,11 @@ object Application extends PageApplication {
                 .cursor(cursor.Pointer)
             ).css("view")
 
-          , text()
-              .bindEnter(t)
-              .attachEnter(_ => editing := None)
-              .css("edit")
-              .show(editing.is(Some(t)))
+        , text()
+            .bindEnter(t)
+            .attachEnter(_ => editing := None)
+            .css("edit")
+            .show(editing.is(Some(t)))
           ).css("todo")
            .cssState(editing.is(Some(t)), "editing")
            .cssState(completed.contains(t), "completed")
@@ -79,7 +78,7 @@ object Application extends PageApplication {
       ).id("main")
 
     , footer(
-        div(b(uncompleted.size), " item(s) left")
+        div(b(active.size), " item(s) left")
           .id("todo-count")
 
       , ul(filters.map { f =>
@@ -100,7 +99,7 @@ object Application extends PageApplication {
        .id("footer")
     ).id("todoapp")
 
-    , footer(
+  , footer(
       p("Double-click to edit a todo")
     , p("Written by ", a("Tim Nieradzik").url("http://github.com/tindzk/"))
     ).id("info")

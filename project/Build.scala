@@ -9,8 +9,8 @@ object Build extends sbt.Build {
   val buildVersion = "0.2.0"
   val buildScalaVersion = "2.11.5"
   val buildScalaOptions = Seq(
-    "-unchecked", "-deprecation",
-    "-encoding", "utf8"
+    "-unchecked", "-deprecation"
+  , "-encoding", "utf8"
   )
 
   lazy val main = Project(id = "todomvc", base = file("."))
@@ -18,13 +18,13 @@ object Build extends sbt.Build {
     .settings(
       libraryDependencies ++= Seq(
         "io.github.widok" %%% "widok" % "0.2.0-SNAPSHOT"
-      ),
-      organization := buildOrganisation,
-      version := buildVersion,
-      scalaVersion := buildScalaVersion,
-      scalacOptions := buildScalaOptions,
-      persistLauncher := true,
-      scalaJSSemantics ~= (_
+      )
+    , organization := buildOrganisation
+    , version := buildVersion
+    , scalaVersion := buildScalaVersion
+    , scalacOptions := buildScalaOptions
+    , persistLauncher := true
+    , scalaJSSemantics ~= (_
         .withRuntimeClassName(_ => "")
         .withAsInstanceOfs(CheckedBehavior.Unchecked)
       )
