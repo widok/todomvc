@@ -1,109 +1,107 @@
 package org.widok.todomvc
 
-import org.scalajs.dom
 import org.widok._
-import org.widok.bindings.HTML._
+import org.widok.html._
 
-case class Todo(value: String, completed: Boolean = false, editing: Boolean = false)
-case class Filter(value: String, f: Todo => Boolean)
+object Application extends PageApplication {
+  type Todo = Var[String]
+  case class Filter(value: String, f: Todo => ReadChannel[Boolean])
 
-object Main extends PageApplication {
-  val todo = Channel[String]()
-  val todos = CachedAggregate[Todo]()
-  todo.map(_.trim).filter(_.nonEmpty).attach { value =>
-    todos.append(Todo(value))
-    todo := ""
+  val todo  = Channel[String]()
+  val todos = Buffer[Todo]()
+
+  val completed = BufSet[Todo]()
+  val active    = todos - completed
+
+  val filterAll       = Filter("All"      , _ => Var(true)    )
+  val filterActive    = Filter("Active"   , active.contains   )
+  val filterCompleted = Filter("Completed", completed.contains)
+
+  val filter  = Var(filterAll)
+  val filters = Buffer(filterAll, filterActive, filterCompleted)
+  val editing = Var(Option.empty[Todo])
+
+  todo.filterCycles.map(_.trim).filter(_.nonEmpty).attach { value =>
+    todos += Var(value)
+    todo := "" /* Makes the `filterCycles` call necessary. */
   }
 
-  val filterAll = Filter("All", _ => true)
-  val filterActive = Filter("Active", !_.completed)
-  val filterCompleted = Filter("Completed", _.completed)
+  todos.removals.attach(completed -= _)
 
-  val filters = Seq(filterAll, filterActive, filterCompleted)
-  val filter = Channel.unit(filterAll)
-  val filtered = todos.filterCh(filter.map(_.f))
-
-  val completed = todos.filter(_.completed)
-  val uncompleted = todos.filter(!_.completed)
-  val allCompleted = todos.forall(_.completed)
-
-  def contents() = Seq(
-    Section(
-      Header(
-        Heading.Level1("todos"),
-        Input.Text()
+  def view() = Inline(
+    section(
+      header(
+        h1("todos")
+      , text()
+          .bindEnter(todo)
           .autofocus(true)
           .placeholder("What needs to be done?")
-          .bind(todo)
           .id("new-todo")
-      ).id("header"),
+      ).id("header")
 
-      Section(
-        Input.Checkbox()
-          .bind(allCompleted)
-          .bind((state: Boolean) => todos.update(_.copy(completed = state)))
+    , section(
+        checkbox() /* All completed? */
+          .bind(Channel(active.isEmpty, (c: Boolean) => completed.toggle(c, todos: _*)))
           .show(todos.nonEmpty)
           .id("toggle-all")
-          .cursor(Cursor.Pointer),
+          .cursor(cursor.Pointer)
 
-        Label("Mark all as complete")
-          .forId("toggle-all"),
+      , label("Mark all as complete")
+          .forId("toggle-all")
 
-        List.Unordered().bind(filtered) { todo =>
-          val value = todo.cache.value[String](_ >> 'value)
-          val completed = todo.cache.value[Boolean](_ >> 'completed)
-          val editing = todo.cache.value[Boolean](_ >> 'editing)
-
-          List.Item(
-            Container.Generic(
-              Input.Checkbox()
-                .bind(completed)
+      , ul(todos.map { t =>
+          li(
+            div(
+              checkbox()
+                .bind(Channel(completed.contains(t), (c: Boolean) => if (completed.contains$(t) != c) completed.toggle(c, t)))
                 .css("toggle")
-                .cssCh(completed, "completed"),
 
-              Label(value)
-                .bindMouse(Event.Mouse.DoubleClick, (e: dom.MouseEvent) => editing := true),
+            , label(t)
+                .onDoubleClick(_ => editing := Some(t))
 
-              Button()
-                .bind((_: Unit) => filtered.remove(todo))
+            , button()
+                .onClick(_ => todos.remove(t))
                 .css("destroy")
-                .cursor(Cursor.Pointer)
-            ).css("view"),
+                .cursor(cursor.Pointer)
+            ).css("view")
 
-            Input.Text()
-              .bind(value + ((_: String) => editing := false))
-              .css("edit")
-              .show(editing)
-          ).cssCh(editing, "editing")
-           .cssCh(completed, "completed")
-        }.id("todo-list")
-      ).id("main"),
+        , text()
+            .bindEnter(t)
+            .attachEnter(_ => editing := None)
+            .css("edit")
+            .show(editing.is(Some(t)))
+          ).css("todo")
+           .cssState(editing.is(Some(t)), "editing")
+           .cssState(completed.contains(t), "completed")
+           .show(filter.flatMap(_.f(t)))
+        }).id("todo-list")
+      ).id("main")
 
-      Footer(
-        Container.Generic(Text.Bold(uncompleted.size), " item(s) left")
-          .id("todo-count"),
+    , footer(
+        div(b(active.size), " item(s) left")
+          .id("todo-count")
 
-        List.Unordered(filters.map(f =>
-          List.Item(
-            Anchor(f.value)
-              .bind((_: Unit) => filter := f)
-              .cursor(Cursor.Pointer)
-              .cssCh(filter.map(_ == f), "selected"))
-        ): _*).id("filters"),
+      , ul(filters.map { f =>
+          li(
+            a(f.value)
+              .onClick(_ => filter := f)
+              .cursor(cursor.Pointer)
+              .cssState(filter.is(f), "selected")
+          )
+        }).id("filters")
 
-        Button("Clear completed (", completed.size, ")")
-          .bind((_: Unit) => completed.clear())
+      , button("Clear completed (", completed.size, ")")
+          .onClick(_ => todos.removeAll(completed))
           .show(completed.nonEmpty)
-          .cursor(Cursor.Pointer)
+          .cursor(cursor.Pointer)
           .id("clear-completed")
       ).show(todos.nonEmpty)
        .id("footer")
-    ).id("todoapp"),
+    ).id("todoapp")
 
-    Footer(
-      Paragraph("Double-click to edit a todo"),
-      Paragraph("Written by ", Anchor("Tim Nieradzik").url("http://github.com/tindzk/")),
-      Paragraph("Part of ", Anchor("TodoMVC").url("http://todomvc.com/"))
+  , footer(
+      p("Double-click to edit a todo")
+    , p("Written by ", a("Tim Nieradzik").url("http://github.com/tindzk/"))
     ).id("info")
   )
 

@@ -1,27 +1,33 @@
-import sbt.Keys._
 import sbt._
-import scala.scalajs.sbtplugin.ScalaJSPlugin._
+import sbt.Keys._
+import org.scalajs.sbtplugin._
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+import org.scalajs.core.tools.sem._
 
 object Build extends sbt.Build {
   val buildOrganisation = "org.widok"
-  val buildVersion = "0.1.3"
-  val buildScalaVersion = "2.11.2"
+  val buildVersion = "0.2.0"
+  val buildScalaVersion = "2.11.6"
   val buildScalaOptions = Seq(
-    "-unchecked", "-deprecation",
-    "-encoding", "utf8"
+    "-unchecked"
+  , "-deprecation"
+  , "-encoding", "utf8"
   )
 
   lazy val main = Project(id = "todomvc", base = file("."))
-    .settings(scalaJSSettings: _*)
+    .enablePlugins(ScalaJSPlugin)
     .settings(
-      resolvers += "bintray-alexander_myltsev" at "http://dl.bintray.com/alexander-myltsev/maven/",
       libraryDependencies ++= Seq(
-        "io.github.widok" %%% "widok" % "0.1.3"
-      ),
-      organization := buildOrganisation,
-      version := buildVersion,
-      scalaVersion := buildScalaVersion,
-      scalacOptions := buildScalaOptions,
-      ScalaJSKeys.persistLauncher := true
+        "io.github.widok" %%% "widok" % "0.2.0"
+      )
+    , organization := buildOrganisation
+    , version := buildVersion
+    , scalaVersion := buildScalaVersion
+    , scalacOptions := buildScalaOptions
+    , persistLauncher := true
+    , scalaJSSemantics ~= (_
+        .withRuntimeClassName(_ => "")
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)
+      )
     )
 }
