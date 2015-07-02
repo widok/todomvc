@@ -25,9 +25,5 @@ object Build extends sbt.Build {
     , scalaVersion := buildScalaVersion
     , scalacOptions := buildScalaOptions
     , persistLauncher := true
-    , scalaJSSemantics ~= (_
-        .withRuntimeClassName(_ => "")
-        .withAsInstanceOfs(CheckedBehavior.Unchecked)
-      )
     )
 }
